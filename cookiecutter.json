@@ -1,0 +1,8 @@
+{
+  "app_name": "",
+  "project_id_dev": "",
+  "iam_owners_dev": "group:ki-web-nonprod@ki-insurance.com",
+  "_copy_without_render": [
+    ".github/*"
+  ]
+}
