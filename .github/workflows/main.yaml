@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_IMAGE_TAG: europe-docker.pkg.dev/ki-artifact-registries-cf08/ki-docker/APPNAME:${{ github.sha }}-${{ github.run_number }}-${{ github.run_attempt }}
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    outputs:
+      docker_image_tag: ${{ env.DOCKER_IMAGE_TAG }}
+      should_run_tofu: ${{ steps.check_has_infra_changes.outputs.any_changed == 'true' || github.ref == 'refs/heads/main' }}
+    permissions:
+      contents: "read"
+      id-token: "write"
+    defaults:
+      run:
+        working-directory: app/
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: "corretto"
+          java-version: 17
+          cache: "gradle"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build and Test
+        run: ./gradlew --stacktrace clean bootJar -x test
+
+      - name: Docker
+        uses: ./.github/actions/docker
+        with:
+          tags: ${{ env.DOCKER_IMAGE_TAG }}
+          push: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+
+      - name: Check if any changes to infra
+        id: check_has_infra_changes
+        uses: tj-actions/changed-files@v45
+        with:
+          files: tofu/**
+
+  tofu:
+    needs: build-and-test
+    if: ${{ needs.build-and-test.outputs.should_run_tofu == 'true' }}
+    strategy:
+      fail-fast: true
+      max-parallel: 1
+      matrix:
+        # OpenTofu plan/apply is executed for each environment in this array, in sequential order.
+        # If you create a new environment, add it to this array at the desired sequence position.
+        env:
+          - Dev
+          - Live
+    uses: ./.github/workflows/tofu.yaml
+    with:
+      environment: ${{ matrix.env }}
+      image_tag: ${{ needs.build-and-test.outputs.docker_image_tag }}

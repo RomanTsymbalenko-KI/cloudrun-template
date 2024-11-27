@@ -1,0 +1,28 @@
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/googlecloudexporter
+# https://github.com/Ki-Insurance/ki-k8s-cluster-management/blob/main/kubernetes/infrastructure/envs/prod/opentelemetry/collector.yaml
+receivers:
+  zipkin:
+  otlp:
+    protocols:
+      grpc:
+      http:
+exporters:
+  googlecloud:
+    project: MONITORING_PROJECT_ID # Do not change this. This is automatically replaced by OpenTofu in /tofu/infra/main.tf.
+    log:
+      default_log_name: opentelemetry.io/collector-exported-log
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 65
+    spike_limit_percentage: 20
+  batch:
+  resourcedetection:
+    detectors: [gcp]
+    timeout: 10s
+service:
+  pipelines:
+    traces:
+      receivers: [otlp, zipkin]
+      processors: [memory_limiter, batch]
+      exporters: [googlecloud]
