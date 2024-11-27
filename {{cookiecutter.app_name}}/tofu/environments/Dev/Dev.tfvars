@@ -1,5 +1,5 @@
-gcp_project_id         = "PROJECT_ID_DEV"
-gcp_project_iam_owners = ["IAM_OWNERS_DEV"]
+gcp_project_id         = "{{cookiecutter.project_id_dev}}"
+gcp_project_iam_owners = ["{{cookiecutter.iam_owners_dev}}"]
 
 # Cloud Run specific variables
 region                 = "europe-west2"
