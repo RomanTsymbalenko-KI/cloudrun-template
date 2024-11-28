@@ -63,7 +63,6 @@ jobs:
         # If you create a new environment, add it to this array at the desired sequence position.
         env:
           - Dev
-          - Live
     uses: ./.github/workflows/tofu.yaml
     with:
       environment: ${{ matrix.env }}
